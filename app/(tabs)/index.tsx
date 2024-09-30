@@ -1,21 +1,61 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, TextInput, FlatList, View, TouchableOpacity } from 'react-native';
-import { ThemedText } from '@/components/ThemedText'; // Assuming you have a themed text component
-import { ThemedView } from '@/components/ThemedView'; // Assuming you have a themed view component
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView'; 
+import { OpenAI } from "openai";
+
+const api = new OpenAI({
+  apiKey: 'dca73e541cf54e718bd6291c5e2974f3', 
+  baseURL: 'https://api.aimlapi.com/v1',
+});
 
 export default function HomeScreen() {
-  const [messages, setMessages] = useState([]); // State for chat messages
-  const [input, setInput] = useState(''); // State for input message
+  const [messages, setMessages] = useState([]); 
+  const [input, setInput] = useState(''); 
+  const [loading, setLoading] = useState(false); 
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (input.trim()) {
-      setMessages([...messages, { id: Date.now().toString(), text: input }]);
+      const userMessage = { id: Date.now().toString(), text: input, role: 'user' };
+      setMessages((prevMessages) => [...prevMessages, userMessage]); 
       setInput('');
+
+      setLoading(true);
+      try {
+        const response = await api.chat.completions.create({
+          model: "mistralai/Mistral-7B-Instruct-v0.2",
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful assistant.",
+            },
+            {
+              role: "user",
+              content: input,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 256,
+        });
+
+        const aiMessage = {
+          id: Date.now().toString(),
+          text: response.choices[0].message.content,
+          role: 'assistant',
+        };
+
+        setMessages((prevMessages) => [...prevMessages, aiMessage]);
+      } catch (error) {
+        console.error("Error fetching AI response:", error.response ? error.response.data : error.message);
+        setMessages((prevMessages) => [...prevMessages, { id: Date.now().toString(), text: "Sorry, something went wrong.", role: 'error' }]);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.messageContainer}>
+    <View style={[styles.messageContainer, item.role === 'assistant' ? styles.assistantMessage : styles.userMessage]}>
       <ThemedText style={styles.messageText}>{item.text}</ThemedText>
     </View>
   );
@@ -34,9 +74,10 @@ export default function HomeScreen() {
           value={input}
           onChangeText={setInput}
           placeholder="Type your message..."
+          editable={!loading} // Disable input while loading
         />
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <ThemedText style={styles.sendButtonText}>Send</ThemedText>
+        <TouchableOpacity onPress={handleSend} style={styles.sendButton} disabled={loading}>
+          <ThemedText style={styles.sendButtonText}>{loading ? "Sending..." : "Send"}</ThemedText>
         </TouchableOpacity>
       </View>
     </ThemedView>
@@ -55,8 +96,15 @@ const styles = StyleSheet.create({
   messageContainer: {
     marginVertical: 4,
     padding: 10,
-    backgroundColor: '#e1ffc7', // Light green background for messages
     borderRadius: 10,
+  },
+  userMessage: {
+    backgroundColor: '#e1ffc7', // Light green background for user messages
+    alignSelf: 'flex-start',
+  },
+  assistantMessage: {
+    backgroundColor: '#f0f0f0', // Light grey background for AI messages
+    alignSelf: 'flex-end',
   },
   messageText: {
     fontSize: 16,
