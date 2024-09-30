@@ -1,70 +1,88 @@
-import { Image, StyleSheet, Platform } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React, { useState } from 'react';
+import { Image, StyleSheet, TextInput, FlatList, View, TouchableOpacity } from 'react-native';
+import { ThemedText } from '@/components/ThemedText'; // Assuming you have a themed text component
+import { ThemedView } from '@/components/ThemedView'; // Assuming you have a themed view component
 
 export default function HomeScreen() {
+  const [messages, setMessages] = useState([]); // State for chat messages
+  const [input, setInput] = useState(''); // State for input message
+
+  const handleSend = () => {
+    if (input.trim()) {
+      setMessages([...messages, { id: Date.now().toString(), text: input }]);
+      setInput('');
+    }
+  };
+
+  const renderItem = ({ item }) => (
+    <View style={styles.messageContainer}>
+      <ThemedText style={styles.messageText}>{item.text}</ThemedText>
+    </View>
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <ThemedView style={styles.container}>
+      <FlatList
+        data={messages}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.chatList}
+      />
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={input}
+          onChangeText={setInput}
+          placeholder="Type your message..."
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+          <ThemedText style={styles.sendButtonText}>Send</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  chatList: {
+    paddingBottom: 80, // Add some space for the input area
+  },
+  messageContainer: {
+    marginVertical: 4,
+    padding: 10,
+    backgroundColor: '#e1ffc7', // Light green background for messages
+    borderRadius: 10,
+  },
+  messageText: {
+    fontSize: 16,
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+    paddingVertical: 10,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 20,
+    padding: 10,
+    marginRight: 10,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  sendButton: {
+    backgroundColor: '#007bff', // Blue color for send button
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+  },
+  sendButtonText: {
+    color: '#fff',
   },
 });
