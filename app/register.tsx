@@ -48,7 +48,7 @@ export default function RegisterPage() {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.inner}>
-          <Text style={styles.title}>VK Register</Text>
+          <Text style={styles.title}>Регистрация</Text>
           <TextInput
             style={styles.input}
             placeholder="Ваше имя"
