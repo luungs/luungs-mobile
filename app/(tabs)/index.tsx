@@ -3,10 +3,9 @@ import { Image, StyleSheet, TextInput, FlatList, View, TouchableOpacity } from '
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { OpenAI } from "openai";
-import { OPENAI_API_KEY } from '@env';  // Import API key from .env
 
 const api = new OpenAI({
-  apiKey: OPENAI_API_KEY, // Use environment variable
+  apiKey: 'sk-gSDT6wO5ZaqChMmnHRrmbEIwWMky9z0MCK0dmnchtbT3BlbkFJPhc7JSqJ5WLDb24hUEzINYq1fb_eJRRjyEbykn7lkA', // Use environment variable
   baseURL: 'https://api.openai.com/v1', // Official OpenAI base URL
 });
 
