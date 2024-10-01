@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, TextInput, FlatList, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView'; 
+import { ThemedView } from '@/components/ThemedView';
 import { OpenAI } from "openai";
+import { OPENAI_API_KEY } from '@env';  // Import API key from .env
 
 const api = new OpenAI({
-  apiKey: 'dca73e541cf54e718bd6291c5e2974f3', 
-  baseURL: 'https://api.aimlapi.com/v1',
+  apiKey: OPENAI_API_KEY, // Use environment variable
+  baseURL: 'https://api.openai.com/v1', // Official OpenAI base URL
 });
 
 export default function HomeScreen() {
@@ -23,7 +24,7 @@ export default function HomeScreen() {
       setLoading(true);
       try {
         const response = await api.chat.completions.create({
-          model: "mistralai/Mistral-7B-Instruct-v0.2",
+          model: "gpt-3.5-turbo",
           messages: [
             {
               role: "system",
@@ -74,7 +75,7 @@ export default function HomeScreen() {
           value={input}
           onChangeText={setInput}
           placeholder="Type your message..."
-          editable={!loading} // Disable input while loading
+          editable={!loading}
         />
         <TouchableOpacity onPress={handleSend} style={styles.sendButton} disabled={loading}>
           <ThemedText style={styles.sendButtonText}>{loading ? "Sending..." : "Send"}</ThemedText>
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   chatList: {
-    paddingBottom: 80, // Add some space for the input area
+    paddingBottom: 80,
   },
   messageContainer: {
     marginVertical: 4,
@@ -99,11 +100,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   userMessage: {
-    backgroundColor: '#e1ffc7', // Light green background for user messages
+    backgroundColor: '#e1ffc7',
     alignSelf: 'flex-start',
   },
   assistantMessage: {
-    backgroundColor: '#f0f0f0', // Light grey background for AI messages
+    backgroundColor: '#f0f0f0',
     alignSelf: 'flex-end',
   },
   messageText: {
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   sendButton: {
-    backgroundColor: '#007bff', // Blue color for send button
+    backgroundColor: '#007bff',
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 10,
@@ -134,3 +135,4 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 });
+
