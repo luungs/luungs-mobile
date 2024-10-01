@@ -7,6 +7,7 @@ export default function Assignments() {
   const router = useRouter();
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -23,10 +24,26 @@ export default function Assignments() {
     fetchAssignments();
   }, []);
 
+  const filteredAssignments = assignments.filter((assignment) =>
+    assignment.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Function to determine the color based on rating
+  const getRatingColor = (rating) => {
+    if (rating >= 100 && rating <= 200) {
+      return '#1CAA00'; // Green
+    } else if (rating === 300) {
+      return '#F9D300'; // Yellow
+    } else if (rating >= 400 && rating <= 500) {
+      return '#D00000'; // Red
+    }
+    return '#000'; // Default color (black) if no condition matches
+  };
+
   if (loading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#0096FF" />
       </View>
     );
   }
@@ -36,18 +53,22 @@ export default function Assignments() {
       <TextInput
         style={styles.searchInput}
         placeholder="Поиск..."
+        value={searchTerm}
+        onChangeText={setSearchTerm} // Update search term on change
       />
       <FlatList
-        data={assignments}
+        data={filteredAssignments} // Use filtered assignments
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity 
             style={styles.assignmentCard} 
             onPress={() => router.push(`/assignments/${item.id}`)}
-            >
+          >
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.description}>{item.description}</Text>
-            <Text style={styles.rating}>Рейтинг: {item.rating}</Text>
+            <Text style={[styles.rating, { color: getRatingColor(item.rating) }]}>
+              Рейтинг: {item.rating}
+            </Text>
           </TouchableOpacity>
         )}
       />
@@ -58,7 +79,9 @@ export default function Assignments() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 70,
+    backgroundColor: '#FFFFFF',
   },
   loader: {
     flex: 1,
@@ -69,6 +92,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderColor: '#ccc',
     borderWidth: 1,
+    fontSize: 16,
     borderRadius: 8,
     paddingHorizontal: 10,
     marginBottom: 16,
@@ -76,19 +100,23 @@ const styles = StyleSheet.create({
   assignmentCard: {
     padding: 16,
     backgroundColor: '#fff',
-    borderColor: '#ccc',
+    borderColor: '#D9D9D9',
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 10,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '500',
   },
   description: {
-    color: '#666',
+    color: '#717171',
+    fontWeight: '300',
+    marginTop: 7,
+    fontSize: 16,
   },
   rating: {
-    color: '#007bff',
+    marginTop: 15,
+    fontSize: 16,
   },
 });

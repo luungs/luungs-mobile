@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Image, StyleSheet, TextInput, FlatList, View, TouchableOpacity } from 'react-native';
+import { Image, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, TextInput, FlatList, View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { OpenAI } from "openai";
+import { open_ai } from "@/api.tsx";
 
 const api = new OpenAI({
-  apiKey: 'sk-gSDT6wO5ZaqChMmnHRrmbEIwWMky9z0MCK0dmnchtbT3BlbkFJPhc7JSqJ5WLDb24hUEzINYq1fb_eJRRjyEbykn7lkA', // Use environment variable
+  apiKey: open_ai,  
   baseURL: 'https://api.openai.com/v1', // Official OpenAI base URL
 });
 
@@ -54,32 +55,46 @@ export default function HomeScreen() {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View style={[styles.messageContainer, item.role === 'assistant' ? styles.assistantMessage : styles.userMessage]}>
-      <ThemedText style={styles.messageText}>{item.text}</ThemedText>
-    </View>
-  );
+  const renderItem = ({ item }) => {
+    if (item.role === 'loading') {
+      return (
+        <View style={[styles.messageContainer, styles.loadingMessage]}>
+          <ActivityIndicator size="small" color="#fff" />
+          <ThemedText style={styles.loadingText}>Загрузка...</ThemedText>
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.messageContainer, item.role === 'assistant' ? styles.assistantMessage : styles.userMessage]}>
+        <ThemedText style={styles.messageText}>{item.text}</ThemedText>
+      </View>
+    );
+  };
 
   return (
     <ThemedView style={styles.container}>
+      <ThemedText style={{ color: '#0096FF', textAlign: 'center', fontSize: 28, fontWeight: '600', paddingVertical: 10 }}>Luungs</ThemedText>
       <FlatList
-        data={messages}
+        data={loading ? [...messages, { id: Date.now().toString(), role: 'loading' }] : messages}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.chatList}
       />
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={input}
-          onChangeText={setInput}
-          placeholder="Type your message..."
-          editable={!loading}
-        />
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton} disabled={loading}>
-          <ThemedText style={styles.sendButtonText}>{loading ? "Sending..." : "Send"}</ThemedText>
-        </TouchableOpacity>
-      </View>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={input}
+            onChangeText={setInput}
+            placeholder="Введите ваш запрос..."
+            editable={!loading}
+          />
+          <TouchableOpacity onPress={handleSend} style={styles.sendButton} disabled={loading}>
+            <ThemedText style={styles.sendButtonText}>Отправить</ThemedText>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </ThemedView>
   );
 }
@@ -88,6 +103,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 60,
     justifyContent: 'space-between',
   },
   chatList: {
@@ -97,14 +113,26 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     padding: 10,
     borderRadius: 10,
+    maxWidth: '90%',
   },
   userMessage: {
-    backgroundColor: '#e1ffc7',
-    alignSelf: 'flex-start',
+    backgroundColor: '#F6F6F6',
+    alignSelf: 'flex-end',
   },
   assistantMessage: {
-    backgroundColor: '#f0f0f0',
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start',
+  },
+  loadingMessage: {
+    backgroundColor: '#ccc',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginLeft: 8,
+    color: '#fff',
+    fontSize: 16,
   },
   messageText: {
     fontSize: 16,
@@ -112,16 +140,16 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#ccc',
-    paddingVertical: 10,
+    paddingVertical: 5,
   },
   input: {
     flex: 1,
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 20,
+    fontSize: 18,
     padding: 10,
+    paddingHorizontal: 20,
     marginRight: 10,
   },
   sendButton: {

@@ -7,6 +7,7 @@ export default function Assignment() {
   const { id } = useLocalSearchParams();
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedAnswers, setSelectedAnswers] = useState({}); // Track selected answers
 
   useEffect(() => {
     const fetchAssignment = async () => {
@@ -23,21 +24,29 @@ export default function Assignment() {
     fetchAssignment();
   }, [id]);
 
+  const handleRadioChange = (questionIndex, option) => {
+    setSelectedAnswers((prevState) => ({
+      ...prevState,
+      [questionIndex]: option, // Set the selected option for the question
+    }));
+  };
+
   if (loading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#0096FF" />
       </View>
     );
   }
 
   if (!assignment) {
-    return <Text>Assignment not found</Text>;
+    return <Text>Задание не найдено</Text>;
   }
 
   return (
     <View style={styles.container}>
       <ScrollView>
+        <Text style={styles.subtitle}>Задание №{assignment.id}</Text>
         <Text style={styles.title}>{assignment.title}</Text>
         <Text style={styles.description}>{assignment.description}</Text>
         {assignment.type === 'test' && (
@@ -45,11 +54,16 @@ export default function Assignment() {
             <Text style={styles.subheading}>Задания</Text>
             {assignment.test.map((test, index) => (
               <View key={index} style={styles.testItem}>
-                <Text>{test.question}</Text>
+                <Text style={{ fontSize: 18, marginBottom: 10 }}>{test.question}</Text>
                 {['a', 'b', 'c', 'd'].map((option) => (
-                  <View key={option} style={styles.radioGroup}>
-                    <Text>{test[option]}</Text>
-                  </View>
+                  <TouchableOpacity
+                    key={option}
+                    style={styles.radioContainer}
+                    onPress={() => handleRadioChange(index, option)}
+                  >
+                    <View style={[styles.radioCircle, selectedAnswers[index] === option && styles.selectedRadio]} />
+                    <Text style={{ fontSize: 18 }}>{test[option]}</Text>
+                  </TouchableOpacity>
                 ))}
               </View>
             ))}
@@ -83,6 +97,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 70,
+    backgroundColor: '#FFFFFF',
+  },
+  subtitle: {
+    fontSize: 20,
+    fontWeight: '600',
   },
   loader: {
     flex: 1,
@@ -92,26 +112,42 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    marginTop: 10,
   },
   description: {
     color: '#666',
     marginVertical: 10,
+    fontSize: 18,
   },
   subheading: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginVertical: 10,
   },
   testItem: {
     marginBottom: 10,
   },
-  radioGroup: {
+  radioContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 4,
   },
+  radioCircle: {
+    width: 24,
+    height: 24,
+    borderColor: '#007bff',
+    borderWidth: 2,
+    borderRadius: 12, // Make it a circle
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedRadio: {
+    backgroundColor: '#007bff',
+  },
   taskItem: {
     marginVertical: 4,
+    fontSize: 18,
   },
   textArea: {
     height: 100,

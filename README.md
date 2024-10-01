@@ -1,8 +1,8 @@
 ## ToDo
 
 - [x] Login design
-- [ ] Registration design
-- [ ] Chat design
+- [x] Registration design
+- [x] Chat design
 - [ ] Students design
 - [ ] Student design
 - [ ] Assignments design

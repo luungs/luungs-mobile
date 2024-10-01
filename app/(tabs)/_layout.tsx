@@ -46,7 +46,7 @@ export default function TabLayout() {
         options={{
           title: 'Задачи',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
+            <TabBarIcon name={focused ? 'checkmark-done' : 'checkmark-done-outline'} color={color} />
           ),
         }}
       />
@@ -55,7 +55,7 @@ export default function TabLayout() {
         options={{
           title: 'Студенты',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
+            <TabBarIcon name={focused ? 'people' : 'people-outline'} color={color} />
           ),
         }}
       />
