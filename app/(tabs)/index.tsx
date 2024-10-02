@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Image, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, TextInput, FlatList, View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { OpenAI } from "openai";
 import { open_ai } from "@/api.tsx";
+import { useRoute } from '@react-navigation/native';
 
 const api = new OpenAI({
   apiKey: open_ai,  
@@ -11,13 +12,35 @@ const api = new OpenAI({
 });
 
 export default function HomeScreen() {
+  const route = useRoute();
   const [messages, setMessages] = useState([]); 
   const [input, setInput] = useState(''); 
   const [loading, setLoading] = useState(false); 
+  const { assignmentData } = route.params || {};
+  
+  // Create a reference for FlatList
+  const flatListRef = useRef(null);
 
-  const handleSend = async () => {
-    if (input.trim()) {
-      const userMessage = { id: Date.now().toString(), text: input, role: 'user' };
+  useEffect(() => {
+    if (assignmentData) {
+      let assignmentMessage = `Задание №${assignmentData.id}\n${assignmentData.title}\n${assignmentData.description}\n`;
+
+      assignmentData.test.forEach((test, index) => {
+        assignmentMessage += `${index + 1}. ${test.question}\n`; // Add question to message
+      });
+
+      assignmentData.task.forEach((task, index) => {
+        assignmentMessage += `${index + 1}. ${task.question}\n`; // Add question to message
+      });
+
+      handleSend(assignmentMessage);
+    }
+  }, [assignmentData]);
+
+  const handleSend = async (messageToSend) => {
+    const messageContent = messageToSend || input; // Use the provided message or the input state
+    if (messageContent.trim()) {
+      const userMessage = { id: Date.now().toString(), text: messageContent, role: 'user' };
       setMessages((prevMessages) => [...prevMessages, userMessage]); 
       setInput('');
 
@@ -32,11 +55,11 @@ export default function HomeScreen() {
             },
             {
               role: "user",
-              content: input,
+              content: messageContent,
             },
           ],
           temperature: 0.7,
-          max_tokens: 256,
+          max_tokens: 1020,
         });
 
         const aiMessage = {
@@ -72,10 +95,16 @@ export default function HomeScreen() {
     );
   };
 
+  useEffect(() => {
+    // Scroll to the bottom whenever messages change
+    flatListRef.current.scrollToEnd({ animated: true });
+  }, [messages]);
+
   return (
     <ThemedView style={styles.container}>
       <ThemedText style={{ color: '#0096FF', textAlign: 'center', fontSize: 28, fontWeight: '600', paddingVertical: 10 }}>Luungs</ThemedText>
       <FlatList
+        ref={flatListRef} // Attach the ref to FlatList
         data={loading ? [...messages, { id: Date.now().toString(), role: 'loading' }] : messages}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
@@ -90,7 +119,7 @@ export default function HomeScreen() {
             placeholder="Введите ваш запрос..."
             editable={!loading}
           />
-          <TouchableOpacity onPress={handleSend} style={styles.sendButton} disabled={loading}>
+          <TouchableOpacity onPress={() => handleSend()} style={styles.sendButton} disabled={loading}>
             <ThemedText style={styles.sendButtonText}>Отправить</ThemedText>
           </TouchableOpacity>
         </View>

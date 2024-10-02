@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, TextInput, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Text } from 'react-native'; // Use your preferred text component
+import { StyleSheet, View, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 
 export default function Assignment() {
   const { id } = useLocalSearchParams();
+  const navigation = useNavigation();
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedAnswers, setSelectedAnswers] = useState({}); // Track selected answers
+  const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [result, setResult] = useState({}); // Store results of answers
 
   useEffect(() => {
     const fetchAssignment = async () => {
@@ -24,11 +27,41 @@ export default function Assignment() {
     fetchAssignment();
   }, [id]);
 
-  const handleRadioChange = (questionIndex, option) => {
+  const handleRadioChange = async (questionIndex, option, answer, test_id) => {
     setSelectedAnswers((prevState) => ({
       ...prevState,
-      [questionIndex]: option, // Set the selected option for the question
+      [questionIndex]: option,
     }));
+
+    const userId = parseInt(await AsyncStorage.getItem('user_id')); // Get user_id from AsyncStorage
+    const assignmentData = assignment.type === 'test' ? {
+      user_id: userId,
+      test_id: test_id,
+      answer: answer,
+    } : {
+      user_id: userId,
+      task_id: assignment.id,
+      answer: option,
+    };
+
+    try {
+      const response = await fetch('https://srv451534.hstgr.cloud/api/answer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(assignmentData),
+      });
+
+      const responseData = await response.json();
+      setResult((prevResult) => ({
+        ...prevResult,
+        [questionIndex]: responseData.is_correct, // Store correctness for each answer
+      }));
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+    }
   };
 
   if (loading) {
@@ -59,12 +92,17 @@ export default function Assignment() {
                   <TouchableOpacity
                     key={option}
                     style={styles.radioContainer}
-                    onPress={() => handleRadioChange(index, option)}
+                    onPress={() => handleRadioChange(index, option, test[option], test.id)}
                   >
                     <View style={[styles.radioCircle, selectedAnswers[index] === option && styles.selectedRadio]} />
                     <Text style={{ fontSize: 18 }}>{test[option]}</Text>
                   </TouchableOpacity>
                 ))}
+                {result[index] !== undefined && ( // Check if there is a result for this question
+                  <Text style={[styles.resultText, result[index] ? styles.correct : styles.incorrect]}>
+                    {result[index] ? 'Правильно' : 'Неправильно'}
+                  </Text>
+                )}
               </View>
             ))}
           </View>
@@ -73,19 +111,62 @@ export default function Assignment() {
           <View>
             <Text style={styles.subheading}>Задания</Text>
             {assignment.task.map((task, index) => (
-              <Text key={index} style={styles.taskItem}>{index + 1}. {task.question}</Text>
+              <View key={index} style={styles.taskItem}>
+                <Text>{index + 1}. {task.question}</Text>
+                <TextInput
+                  style={styles.textArea}
+                  placeholder="Введите ответ..."
+                  multiline
+                  onSubmitEditing={async (e) => {
+                    const userId = parseInt(await AsyncStorage.getItem('user_id'));
+                    const assignmentData = {
+                      user_id: userId,
+                      task_id: assignment.id,
+                      answer: e.nativeEvent.text,
+                    };
+
+                    try {
+                      const response = await fetch('https://srv451534.hstgr.cloud/api/answer', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Accept': 'application/json',
+                        },
+                        body: JSON.stringify(assignmentData),
+                      });
+
+                      const responseData = await response.json();
+                      setResult((prevResult) => ({
+                        ...prevResult,
+                        [index]: responseData.is_correct,
+                      }));
+                    } catch (error) {
+                      console.error('Error submitting answer:', error);
+                    }
+                  }}
+                />
+                {result[index] !== undefined && (
+                  <Text style={[styles.resultText, result[index] ? styles.correct : styles.incorrect]}>
+                    {result[index] ? 'Правильно' : 'Неправильно'}
+                  </Text>
+                )}
+              </View>
             ))}
-            <TextInput
-              style={styles.textArea}
-              placeholder="Введите ответ..."
-              multiline
-            />
           </View>
         )}
-        <TouchableOpacity style={styles.submitButton}>
-          <Text style={styles.buttonText}>Ответить</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.viewAnswerButton}>
+        <TouchableOpacity
+          style={styles.viewAnswerButton}
+          onPress={() => {
+            const assignmentData = {
+              id: assignment.id,
+              title: assignment.title,
+              description: assignment.description,
+              test: assignment.test,
+              task: assignment.task,
+            };
+            navigation.navigate('(tabs)', { screen: 'index', params: { assignmentData } });
+          }}
+        >
           <Text style={styles.buttonText}>Посмотреть ответ</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -137,7 +218,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderColor: '#007bff',
     borderWidth: 2,
-    borderRadius: 12, // Make it a circle
+    borderRadius: 12,
     marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -157,12 +238,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginVertical: 10,
   },
-  submitButton: {
-    backgroundColor: '#007bff',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
   viewAnswerButton: {
     borderColor: '#007bff',
     borderWidth: 2,
@@ -175,4 +250,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  resultText: {
+    fontSize: 16,
+    marginTop: 5,
+  },
+  correct: {
+    color: 'green',
+  },
+  incorrect: {
+    color: 'red',
+  },
 });
+

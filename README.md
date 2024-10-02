@@ -5,9 +5,10 @@
 - [x] Chat design
 - [ ] Students design
 - [ ] Student design
-- [ ] Assignments design
-- [ ] Assignment design
+- [x] Assignments design
+- [x] Assignment design
 - [ ] Profile design
 - [ ] Update profile design
-- [ ] Check correctness logic
+- [x] Check correctness logic
+- [x] Get the answer logic 
 - [ ] Adding rating logic
