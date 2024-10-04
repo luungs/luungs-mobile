@@ -209,6 +209,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#D6D6D6',
     marginTop: 10,
+    textAlign: 'center',
   },
 });
 

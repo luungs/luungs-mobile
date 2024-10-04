@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 
+// Function to generate a random color
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
   let color = '#';
@@ -70,13 +71,13 @@ export default function Students() {
               {item.avatar != null ? (
                 <Image source={{ uri: item.avatar }} style={styles.avatar} />
               ) : (
-                <View style={styles.avatarPlaceholder}>
+                <View style={[styles.avatarPlaceholder, { backgroundColor: getRandomColor() }]}>
                   <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
                 </View>
               )}
               <View style={styles.infoContainer}>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.city}>{item.email}</Text>
+                <Text style={styles.city}>{item.university}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -129,7 +130,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0096FF',
     marginRight: 16,
   },
   avatarText: {
@@ -149,3 +149,4 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 });
+

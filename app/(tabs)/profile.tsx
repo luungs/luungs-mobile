@@ -1,33 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { 
+  View, 
+  Text, 
+  Image, 
+  StyleSheet, 
+  ActivityIndicator, 
+  TouchableOpacity, 
+  ScrollView, 
+  RefreshControl 
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from 'react-native-vector-icons';
 
 export default function Profile() {
   const router = useRouter();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // State for refreshing
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const user_id = await AsyncStorage.getItem('user_id');
-        const response = await fetch(`https://srv451534.hstgr.cloud/api/users/${parseInt(user_id)}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch user data');
-        }
-        const data = await response.json();
-        setUserData(data);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUserData();
   }, []);
+
+  const fetchUserData = async () => {
+    setLoading(true);
+    try {
+      const user_id = await AsyncStorage.getItem('user_id');
+      const response = await fetch(`https://srv451534.hstgr.cloud/api/users/${parseInt(user_id)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+      const data = await response.json();
+      setUserData(data);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchUserData().then(() => setRefreshing(false)); // Refresh user data
+  };
 
   const handleLogout = async () => {
     try {
@@ -66,33 +82,47 @@ export default function Profile() {
 
   const renderRating = () => (
     <View style={styles.ratingContainer}>
-      <MaterialIcons name="emoji-events" size={24} color="#FFD700" />
       <Text style={styles.ratingText}>{userData.rating !== undefined ? userData.rating : 'Не указано'}</Text>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <ScrollView 
+      style={styles.container} 
+      refreshControl={
+        <RefreshControl 
+          refreshing={refreshing} 
+          onRefresh={onRefresh} 
+          colors={['#0096FF']} // Color of the spinner
+        />
+      }
+    >
       <View style={styles.header}>
         {renderAvatar()}
         <View style={styles.headerText}>
           <Text style={styles.name}>{userData.name}</Text>
-          <Text style={styles.email}>{userData.email}</Text>
+          <Text style={styles.email}>{userData.university}</Text>
         </View>
       </View>
+      {renderRating()}
       <TouchableOpacity style={styles.fillProfileButton} onPress={handleFillProfile}>
         <Text style={styles.fillProfileButtonText}>Заполнить профиль</Text>
       </TouchableOpacity>
       <View style={styles.gridContainer}>
-        <Text style={styles.info}>Музыкальные предпочтения: {userData.music_taste || 'Не указано'}</Text>
-        <Text style={styles.info}>Кино предпочтения: {userData.movie_taste || 'Не указано'}</Text>
-        {renderRating()}
+        <View style={styles.preferenceContainer}>
+          <MaterialIcons name="music-note" size={24} color="#0096FF" />
+          <Text style={styles.info}>Музыкальные предпочтения: {userData.music_taste || 'Не указано'}</Text>
+        </View>
+        <View style={styles.preferenceContainer}>
+          <Ionicons name="film" size={24} color="#0096FF" />
+          <Text style={styles.info}>Кино предпочтения: {userData.movie_taste || 'Не указано'}</Text>
+        </View>
       </View>
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <FontAwesome name="sign-out" size={20} color="#FFFFFF" />
+        <MaterialIcons name="logout" size={20} color="#FF4C4C" />
         <Text style={styles.logoutButtonText}>Выйти с аккаунта</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -100,7 +130,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingTop: 80,
+    paddingTop: 90,
     backgroundColor: '#FFFFFF',
   },
   header: {
@@ -115,8 +145,8 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   defaultAvatar: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
     borderRadius: 50,
     backgroundColor: '#0096FF',
     justifyContent: 'center',
@@ -124,7 +154,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   defaultAvatarText: {
-    fontSize: 40,
+    fontSize: 30,
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
@@ -136,40 +166,43 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   email: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#666',
   },
   gridContainer: {
     marginVertical: 10,
   },
-  info: {
-    fontSize: 18,
-    color: '#666',
+  preferenceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 8,
   },
+  info: {
+    fontSize: 15,
+    color: '#666',
+    marginLeft: 10,
+  },
   fillProfileButton: {
-    backgroundColor: '#0096FF',
+    backgroundColor: 'black',
     borderRadius: 8,
-    padding: 12,
+    padding: 15,
     alignItems: 'center',
     marginVertical: 10,
   },
   fillProfileButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: 'bold',
   },
   logoutButton: {
     flexDirection: 'row',
-    backgroundColor: '#FF4C4C',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
     marginTop: 20,
-    justifyContent: 'center',
   },
   logoutButtonText: {
-    color: '#FFFFFF',
+    color: '#FF4C4C',
     fontSize: 18,
     marginLeft: 10,
   },
@@ -180,14 +213,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F7F7',
   },
   ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#F0F8FF',
+    borderRadius: 8,
+    padding: 20,
     marginVertical: 10,
+    alignItems: 'center',
   },
   ratingText: {
-    fontSize: 18,
-    color: '#FFD700',
-    marginLeft: 5,
+    fontSize: 24,
+    color: '#0096FF',
+    fontWeight: 'bold',
   },
 });
 

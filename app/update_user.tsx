@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Text, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Menu, Provider, Divider } from 'react-native-paper';
 import { ThemedText } from '@/components/ThemedText'; // Assuming you have a ThemedText component
 import { ThemedView } from '@/components/ThemedView'; // Assuming you have a ThemedView component
 
@@ -16,6 +17,16 @@ export default function UpdateUserScreen() {
   });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [gradeInput, setGradeInput] = useState(''); // State for grade input
+
+  const universities = [
+    "МУА",
+    "КазНМУ",
+    "Мед. университет в г. Семей",
+    "КазМУНО",
+    "Актюбинский мед. университет",
+  ];
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -49,7 +60,7 @@ export default function UpdateUserScreen() {
       setUpdating(true);
       const userId = await AsyncStorage.getItem('user_id');
       if (!userId) {
-        Alert.alert('Error', 'User ID not found');
+        Alert.alert('Ошибка', 'Не удалось найти ID пользователя');
         return;
       }
 
@@ -58,18 +69,18 @@ export default function UpdateUserScreen() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(user),
+        body: JSON.stringify({ ...user, grade: gradeInput }), // Set the grade from the input
       });
 
       if (response.ok) {
-        Alert.alert('Success', 'User updated successfully');
+        Alert.alert('Успех', 'Пользователь успешно обновлён');
       } else {
         const errorData = await response.json();
-        Alert.alert('Error', errorData.message || 'Failed to update user');
+        Alert.alert('Ошибка', errorData.message || 'Не удалось обновить пользователя');
       }
     } catch (error) {
       console.error('Failed to update user:', error);
-      Alert.alert('Error', 'Something went wrong while updating');
+      Alert.alert('Ошибка', 'Что-то пошло не так при обновлении');
     } finally {
       setUpdating(false);
     }
@@ -84,85 +95,137 @@ export default function UpdateUserScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText style={styles.title}>Update Your Profile</ThemedText>
-      <TextInput
-        style={styles.input}
-        value={user.name}
-        onChangeText={(text) => setUser({ ...user, name: text })}
-        placeholder="Name"
-      />
-      <TextInput
-        style={styles.input}
-        value={user.email}
-        onChangeText={(text) => setUser({ ...user, email: text })}
-        placeholder="Email"
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={styles.input}
-        value={user.description}
-        onChangeText={(text) => setUser({ ...user, description: text })}
-        placeholder="Description"
-      />
-      <TextInput
-        style={styles.input}
-        value={user.music_taste}
-        onChangeText={(text) => setUser({ ...user, music_taste: text })}
-        placeholder="Music Taste"
-      />
-      <TextInput
-        style={styles.input}
-        value={user.movie_taste}
-        onChangeText={(text) => setUser({ ...user, movie_taste: text })}
-        placeholder="Movie Taste"
-      />
-      <TextInput
-        style={styles.input}
-        value={user.university}
-        onChangeText={(text) => setUser({ ...user, university: text })}
-        placeholder="University"
-      />
-      <TextInput
-        style={styles.input}
-        value={user.grade}
-        onChangeText={(text) => setUser({ ...user, grade: text })}
-        placeholder="Grade"
-      />
+    <Provider>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <ThemedView style={styles.container}>
+          <ThemedText style={styles.title}>Обновите свой профиль</ThemedText>
+          
+          <TextInput
+            style={styles.input}
+            value={user.name}
+            onChangeText={(text) => setUser({ ...user, name: text })}
+            placeholder="Имя"
+          />
+          <TextInput
+            style={styles.input}
+            value={user.email}
+            onChangeText={(text) => setUser({ ...user, email: text })}
+            placeholder="Электронная почта"
+            keyboardType="email-address"
+          />
+          <TextInput
+            style={styles.input}
+            value={user.description}
+            onChangeText={(text) => setUser({ ...user, description: text })}
+            placeholder="Описание"
+          />
+          <TextInput
+            style={styles.input}
+            value={user.music_taste}
+            onChangeText={(text) => setUser({ ...user, music_taste: text })}
+            placeholder="Музыкальные предпочтения"
+          />
+          <TextInput
+            style={styles.input}
+            value={user.movie_taste}
+            onChangeText={(text) => setUser({ ...user, movie_taste: text })}
+            placeholder="Кинопредпочтения"
+          />
 
-      <Button title="Сохранить" onPress={handleUpdate} disabled={updating} />
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <TouchableOpacity
+                style={styles.menuButton}
+                onPress={() => setMenuVisible(true)}
+              >
+                <Text style={styles.menuButtonText}>
+                  {user.university || "Выберите университет"}
+                </Text>
+              </TouchableOpacity>
+            }
+          >
+            {universities.map((uni, index) => (
+              <Menu.Item
+                key={index}
+                onPress={() => {
+                  setUser({ ...user, university: uni });
+                  setMenuVisible(false);
+                }}
+                title={uni}
+              />
+            ))}
+            <Divider />
+          </Menu>
 
-      {updating && <ActivityIndicator size="small" color="#007bff" style={styles.updatingIndicator} />}
-    </ThemedView>
+          <TextInput
+            style={styles.input}
+            value={gradeInput}
+            onChangeText={setGradeInput}
+            placeholder="Ваш курс (1-6)"
+            keyboardType="numeric" // Ensure numeric input
+          />
+
+          <TouchableOpacity style={styles.button} onPress={handleUpdate} disabled={updating}>
+            <Text style={styles.buttonText}>Сохранить</Text>
+          </TouchableOpacity>
+          {updating && <ActivityIndicator size="small" color="#007bff" style={styles.updatingIndicator} />}
+        </ThemedView>
+      </TouchableWithoutFeedback>
+    </Provider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    paddingTop: 90,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
+    fontWeight: '600',
+    textAlign: 'left',
+    color: '#0096FF',
+    marginBottom: 30,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
+    height: 50,
+    borderColor: '#C0C0C0',
     fontSize: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+    paddingHorizontal: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
   },
-  loaderContainer: {
-    flex: 1,
+  menuButton: {
+    borderColor: '#C0C0C0',
+    height: 50,
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderRadius: 4,
+  },
+  menuButtonText: {
+    color: '#0096FF', // Menu button text color
+    textAlign: 'center',
+  },
+  button: {
+    height: 50,
+    backgroundColor: '#0096FF',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 4,
+    marginTop: 25,
   },
-  updatingIndicator: {
-    marginTop: 10,
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 

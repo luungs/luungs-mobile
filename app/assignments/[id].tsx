@@ -168,7 +168,7 @@ export default function Assignment() {
             <Text style={styles.subheading}>Задания</Text>
             {assignment.task.map((task, index) => (
               <View key={index} style={styles.taskItem}>
-                <Text>{index + 1}. {task.question}</Text>
+                <Text style={{fontSize: 16}}>{index + 1}. {task.question}</Text>
                 {result[index] ? ( // Show answer as text if correct
                   <Text style={styles.answerText}>{selectedAnswers[index]}</Text>
                 ) : (
@@ -285,8 +285,9 @@ const styles = StyleSheet.create({
     borderColor: '#c8c8c8',
     borderRadius: 5,
     padding: 10,
-    minHeight: 80,
+    minHeight: 130,
     marginVertical: 10,
+    fontSize: 16,
   },
   submitButton: {
     backgroundColor: '#007bff',
@@ -304,6 +305,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     textAlign: 'center',
+    fontSize: 18,
   },
   resultText: {
     marginTop: 10,
