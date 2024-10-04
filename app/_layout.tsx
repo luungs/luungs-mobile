@@ -32,8 +32,8 @@ export default function RootLayout() {
           headerShown: false,  // This will hide the header for all screens in this stack
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="login.tsx" options={{ headerShown: false }} />
-        <Stack.Screen name="register.tsx" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="register" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
     </ThemeProvider>

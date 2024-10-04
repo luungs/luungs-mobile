@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, TextInput, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TextInput, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { Text } from 'react-native'; // Use your preferred text component
 import { useRouter } from 'expo-router';
 
@@ -8,27 +8,34 @@ export default function Assignments() {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [refreshing, setRefreshing] = useState(false); // State for refreshing
+
+  const fetchAssignments = async () => {
+    try {
+      const response = await fetch('https://srv451534.hstgr.cloud/api/asignments/');
+      const data = await response.json();
+      setAssignments(data);
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        const response = await fetch('https://srv451534.hstgr.cloud/api/asignments/');
-        const data = await response.json();
-        setAssignments(data);
-      } catch (error) {
-        console.error('Error fetching assignments:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAssignments();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true); // Start refreshing
+    await fetchAssignments(); // Fetch data again
+    setRefreshing(false); // End refreshing
+  };
 
   const filteredAssignments = assignments.filter((assignment) =>
     assignment.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Function to determine the color based on rating
   const getRatingColor = (rating) => {
     if (rating >= 100 && rating <= 200) {
       return '#1CAA00'; // Green
@@ -71,6 +78,9 @@ export default function Assignments() {
             </Text>
           </TouchableOpacity>
         )}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        } // Add refresh control for pull-to-refresh
       />
     </View>
   );

@@ -23,8 +23,7 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        Alert.alert('Login Successful', 'Redirecting...');
-        await AsyncStorage.setItem('user_id', '2');
+        await AsyncStorage.setItem('user_id', data.user.id.toString());
         router.push('/');
       } else {
         Alert.alert('Login Failed', data.message || 'Invalid credentials');

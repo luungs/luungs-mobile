@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Assignment() {
   const { id } = useLocalSearchParams();
@@ -10,13 +10,40 @@ export default function Assignment() {
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [result, setResult] = useState({}); // Store results of answers
+  const [result, setResult] = useState({});
 
   useEffect(() => {
     const fetchAssignment = async () => {
       try {
-        const response = await fetch(`https://srv451534.hstgr.cloud/api/asignments/${id}`);
+        const user_id = await AsyncStorage.getItem('user_id');
+        const response = await fetch(`https://srv451534.hstgr.cloud/api/asignments/${id}/${parseInt(user_id)}`);
         const data = await response.json();
+
+        // Pre-fill selectedAnswers and result based on user_answers
+        const preSelectedAnswers = {};
+        const preResult = {};
+        
+        if (data.type === 'test') {
+          data.test.forEach((testItem, index) => {
+            const userAnswer = testItem.user_answers[0];
+            if (userAnswer) {
+              const optionKey = Object.keys(testItem).find(key => testItem[key] === userAnswer.answer);
+              preSelectedAnswers[index] = optionKey; // Save selected option
+              preResult[index] = userAnswer.is_correct; // Save correctness
+            }
+          });
+        } else if (data.type === 'task') {
+          data.task.forEach((taskItem, index) => {
+            const userAnswer = taskItem.user_answers[0];
+            if (userAnswer) {
+              preSelectedAnswers[index] = userAnswer.answer; // Save answer
+              preResult[index] = userAnswer.is_correct; // Save correctness
+            }
+          });
+        }
+
+        setSelectedAnswers(preSelectedAnswers);
+        setResult(preResult);
         setAssignment(data);
       } catch (error) {
         console.error('Error fetching assignment:', error);
@@ -33,7 +60,7 @@ export default function Assignment() {
       [questionIndex]: option,
     }));
 
-    const userId = parseInt(await AsyncStorage.getItem('user_id')); // Get user_id from AsyncStorage
+    const userId = parseInt(await AsyncStorage.getItem('user_id'));
     const assignmentData = assignment.type === 'test' ? {
       user_id: userId,
       test_id: test_id,
@@ -57,7 +84,35 @@ export default function Assignment() {
       const responseData = await response.json();
       setResult((prevResult) => ({
         ...prevResult,
-        [questionIndex]: responseData.is_correct, // Store correctness for each answer
+        [questionIndex]: responseData.is_correct,
+      }));
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+    }
+  };
+
+  const handleSubmitAnswer = async (taskIndex, answer, task_id) => {
+    const userId = parseInt(await AsyncStorage.getItem('user_id'));
+    const assignmentData = {
+      user_id: userId,
+      task_id: task_id,
+      answer: answer,
+    };
+
+    try {
+      const response = await fetch('https://srv451534.hstgr.cloud/api/answer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(assignmentData),
+      });
+
+      const responseData = await response.json();
+      setResult((prevResult) => ({
+        ...prevResult,
+        [taskIndex]: responseData.is_correct,
       }));
     } catch (error) {
       console.error('Error submitting answer:', error);
@@ -93,12 +148,13 @@ export default function Assignment() {
                     key={option}
                     style={styles.radioContainer}
                     onPress={() => handleRadioChange(index, option, test[option], test.id)}
+                    disabled={result[index]} // Disable if correct
                   >
                     <View style={[styles.radioCircle, selectedAnswers[index] === option && styles.selectedRadio]} />
                     <Text style={{ fontSize: 18 }}>{test[option]}</Text>
                   </TouchableOpacity>
                 ))}
-                {result[index] !== undefined && ( // Check if there is a result for this question
+                {result[index] !== undefined && (
                   <Text style={[styles.resultText, result[index] ? styles.correct : styles.incorrect]}>
                     {result[index] ? 'Правильно' : 'Неправильно'}
                   </Text>
@@ -113,42 +169,29 @@ export default function Assignment() {
             {assignment.task.map((task, index) => (
               <View key={index} style={styles.taskItem}>
                 <Text>{index + 1}. {task.question}</Text>
-                <TextInput
-                  style={styles.textArea}
-                  placeholder="Введите ответ..."
-                  multiline
-                  onSubmitEditing={async (e) => {
-                    const userId = parseInt(await AsyncStorage.getItem('user_id'));
-                    const assignmentData = {
-                      user_id: userId,
-                      task_id: assignment.id,
-                      answer: e.nativeEvent.text,
-                    };
-
-                    try {
-                      const response = await fetch('https://srv451534.hstgr.cloud/api/answer', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Accept': 'application/json',
-                        },
-                        body: JSON.stringify(assignmentData),
-                      });
-
-                      const responseData = await response.json();
-                      setResult((prevResult) => ({
-                        ...prevResult,
-                        [index]: responseData.is_correct,
-                      }));
-                    } catch (error) {
-                      console.error('Error submitting answer:', error);
-                    }
-                  }}
-                />
+                {result[index] ? ( // Show answer as text if correct
+                  <Text style={styles.answerText}>{selectedAnswers[index]}</Text>
+                ) : (
+                  <TextInput
+                    style={styles.textArea}
+                    placeholder="Введите ответ..."
+                    multiline
+                    value={selectedAnswers[index] || ''} // Pre-fill with previous answer
+                    onChangeText={(text) => setSelectedAnswers((prev) => ({ ...prev, [index]: text }))}
+                  />
+                )}
                 {result[index] !== undefined && (
                   <Text style={[styles.resultText, result[index] ? styles.correct : styles.incorrect]}>
                     {result[index] ? 'Правильно' : 'Неправильно'}
                   </Text>
+                )}
+                {!result[index] && ( // Only show button if the answer is incorrect
+                  <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={() => handleSubmitAnswer(index, selectedAnswers[index], task.id)}
+                  >
+                    <Text style={styles.buttonText}>Отправить ответ</Text>
+                  </TouchableOpacity>
                 )}
               </View>
             ))}
@@ -227,32 +270,44 @@ const styles = StyleSheet.create({
     backgroundColor: '#007bff',
   },
   taskItem: {
-    marginVertical: 4,
-    fontSize: 18,
+    marginBottom: 20,
+  },
+  answerText: {
+    fontSize: 16,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#c8c8c8',
+    borderRadius: 5,
+    backgroundColor: '#f0f0f0',
   },
   textArea: {
-    height: 100,
-    borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 8,
+    borderColor: '#c8c8c8',
+    borderRadius: 5,
     padding: 10,
+    minHeight: 80,
     marginVertical: 10,
   },
-  viewAnswerButton: {
-    borderColor: '#007bff',
-    borderWidth: 2,
-    borderRadius: 8,
+  submitButton: {
+    backgroundColor: '#007bff',
     padding: 10,
-    alignItems: 'center',
-    marginTop: 10,
+    borderRadius: 5,
+  },
+  viewAnswerButton: {
+    marginTop: 20,
+    backgroundColor: '#28a745',
+    padding: 10,
+    borderRadius: 5,
+    fontSize: 18,
+    marginBottom: 80,
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   resultText: {
-    fontSize: 16,
-    marginTop: 5,
+    marginTop: 10,
+    fontWeight: 'bold',
   },
   correct: {
     color: 'green',
