@@ -39,6 +39,10 @@ export default function Profile() {
     }
   };
 
+  const handleFillProfile = () => {
+    router.push('/update_user'); // Navigate to the update_user.tsx component
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -76,7 +80,7 @@ export default function Profile() {
           <Text style={styles.email}>{userData.email}</Text>
         </View>
       </View>
-      <TouchableOpacity style={styles.fillProfileButton}>
+      <TouchableOpacity style={styles.fillProfileButton} onPress={handleFillProfile}>
         <Text style={styles.fillProfileButtonText}>Заполнить профиль</Text>
       </TouchableOpacity>
       <View style={styles.gridContainer}>

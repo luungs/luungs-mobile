@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Image, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, TextInput, FlatList, View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Image, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, TextInput, FlatList, View, TouchableOpacity, ActivityIndicator, Keyboard } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { OpenAI } from "openai";
 import { open_ai } from "@/api.tsx";
 import { useRoute } from '@react-navigation/native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; // Import MaterialIcons
 
 const api = new OpenAI({
   apiKey: open_ai,  
@@ -18,7 +19,6 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false); 
   const { assignmentData } = route.params || {};
   
-  // Create a reference for FlatList
   const flatListRef = useRef(null);
 
   useEffect(() => {
@@ -96,35 +96,45 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    // Scroll to the bottom whenever messages change
-    flatListRef.current.scrollToEnd({ animated: true });
+    if(messages.length > 0) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
   }, [messages]);
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText style={{ color: '#0096FF', textAlign: 'center', fontSize: 28, fontWeight: '600', paddingVertical: 10 }}>Luungs</ThemedText>
-      <FlatList
-        ref={flatListRef} // Attach the ref to FlatList
-        data={loading ? [...messages, { id: Date.now().toString(), role: 'loading' }] : messages}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.chatList}
-      />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Введите ваш запрос..."
-            editable={!loading}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <ThemedView style={styles.container}>
+        <ThemedText style={{ color: '#0096FF', textAlign: 'center', fontSize: 28, fontWeight: '600', paddingVertical: 10 }}>Luungs</ThemedText>
+        {messages.length > 0 ? (
+          <FlatList
+            ref={flatListRef} 
+            data={loading ? [...messages, { id: Date.now().toString(), role: 'loading' }] : messages}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.chatList}
           />
-          <TouchableOpacity onPress={() => handleSend()} style={styles.sendButton} disabled={loading}>
-            <ThemedText style={styles.sendButtonText}>Отправить</ThemedText>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </ThemedView>
+        ) : (
+          <View style={styles.iconContainer}>
+            <MaterialIcons name="school" size={100} color="#D6D6D6" /> 
+            <ThemedText style={styles.iconText}>bızden bızge</ThemedText>
+          </View>
+        )}
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              value={input}
+              onChangeText={setInput}
+              placeholder="Введите ваш запрос..."
+              editable={!loading}
+            />
+            <TouchableOpacity onPress={() => handleSend()} style={styles.sendButton} disabled={loading}>
+              <ThemedText style={styles.sendButtonText}>Отправить</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </ThemedView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -189,6 +199,16 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     color: '#fff',
+  },
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 50,
+  },
+  iconText: {
+    fontSize: 18,
+    color: '#D6D6D6',
+    marginTop: 10,
   },
 });
 
